@@ -1,0 +1,32 @@
+#board {
+    display: grid;
+    grid-template-columns: repeat(9, 50px);
+    grid-template-rows: repeat(9, 50px);
+}
+
+.cell {
+    width: 50px;
+    height: 50px;
+    border: 1px solid black;
+    position: relative;
+}
+
+.player {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+}
+
+#player1 {
+    color: red;
+}
+
+#player2 {
+    color: blue;
+}
+
+#player-info {
+    margin-top: 20px;
+}
