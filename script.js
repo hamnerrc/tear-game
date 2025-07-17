@@ -76,14 +76,14 @@ function renderBoard() {
     const board = document.getElementById('board');
     board.innerHTML = ''; // Clear the board
 
-    // Draw grid lines
+    // Draw grid lines with green stroke
     for (let i = 0; i <= 18; i++) {
         const lineH = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         lineH.setAttribute('x1', 0);
         lineH.setAttribute('y1', i * 20);
         lineH.setAttribute('x2', 360);
         lineH.setAttribute('y2', i * 20);
-        lineH.setAttribute('stroke', '#333');
+        lineH.setAttribute('stroke', '#0f0');
         board.appendChild(lineH);
 
         const lineV = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -91,7 +91,7 @@ function renderBoard() {
         lineV.setAttribute('y1', 0);
         lineV.setAttribute('x2', i * 20);
         lineV.setAttribute('y2', 360);
-        lineV.setAttribute('stroke', '#333');
+        lineV.setAttribute('stroke', '#0f0');
         board.appendChild(lineV);
     }
 
@@ -100,26 +100,38 @@ function renderBoard() {
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         circle.setAttribute('cx', players[p].position[0] * 20);
         circle.setAttribute('cy', players[p].position[1] * 20);
-        circle.setAttribute('r', 8);
+        circle.setAttribute('r', '8');
         circle.setAttribute('fill', p === 1 ? 'red' : 'blue');
+        circle.setAttribute('stroke', 'black');
+        circle.setAttribute('stroke-width', '2');
         circle.setAttribute('data-player', p);
         circle.addEventListener('mousedown', startDrag);
         board.appendChild(circle);
     }
 }
 
-// Update the UI with current player info
+// Update the UI with current player info and attack button visibility
 function updateUI() {
     document.getElementById('current-player').textContent = currentPlayer;
     document.getElementById('current-hp').textContent = players[currentPlayer].hp;
     document.getElementById('current-energy').textContent = players[currentPlayer].energy;
+
+    // Show attack button only if opponent is in line of sight
+    const attackButton = document.getElementById('attack');
+    const target = currentPlayer === 1 ? 2 : 1;
+    const [px, py] = players[currentPlayer].position;
+    const [tx, ty] = players[target].position;
+    if (px === tx || py === ty) {
+        attackButton.classList.remove('hidden');
+    } else {
+        attackButton.classList.add('hidden');
+    }
 }
 
 // Set up action button listeners
 function setupActionButtons() {
     document.getElementById('attack').addEventListener('click', attack);
     document.getElementById('shield').addEventListener('click', shield);
-    document.getElementById('end-turn').addEventListener('click', endTurn);
     document.getElementById('confirm-move').addEventListener('click', confirmMove);
     document.getElementById('undo-move').addEventListener('click', undoMove);
 }
@@ -144,7 +156,7 @@ function drag(event) {
     const gridX = Math.round(x / 20);
     const gridY = Math.round(y / 20);
 
-    // Restrict to horizontal or vertical movement from start position
+    // Restrict to horizontal or vertical movement
     const player = players[currentPlayer];
     const costPerStep = Math.ceil(10 / player.agility);
     const maxDistance = Math.floor(player.energy / costPerStep);
@@ -201,8 +213,9 @@ function addHighlight(x, y) {
     const highlight = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     highlight.setAttribute('cx', x * 20);
     highlight.setAttribute('cy', y * 20);
-    highlight.setAttribute('r', 6);
+    highlight.setAttribute('r', '5');
     highlight.setAttribute('fill', 'yellow');
+    highlight.setAttribute('opacity', '0.5');
     highlight.setAttribute('data-highlight', `${x},${y}`);
     document.getElementById('board').appendChild(highlight);
 }
@@ -221,6 +234,9 @@ function confirmMove() {
     document.getElementById('move-controls').classList.add('hidden');
     renderBoard();
     updateUI();
+    if (players[currentPlayer].energy <= 0) {
+        switchTurn();
+    }
 }
 
 // Undo the move
@@ -230,9 +246,10 @@ function undoMove() {
     tempPosition = null;
     document.getElementById('move-controls').classList.add('hidden');
     renderBoard();
+    updateUI();
 }
 
-// Handle attack
+// Handle attack (ends turn)
 function attack() {
     if (tempPosition) {
         alert('Please confirm or undo your move first.');
@@ -254,13 +271,13 @@ function attack() {
             alert(`Player ${currentPlayer} wins!`);
             location.reload();
         }
-        endTurn();
+        switchTurn();
     } else {
         alert('Target is not in line of sight.');
     }
 }
 
-// Handle shield
+// Handle shield (ends turn)
 function shield() {
     if (tempPosition) {
         alert('Please confirm or undo your move first.');
@@ -270,14 +287,14 @@ function shield() {
     if (players[currentPlayer].energy >= energyCost) {
         players[currentPlayer].energy -= energyCost;
         players[currentPlayer].shieldActive = true;
-        endTurn();
+        switchTurn();
     } else {
         alert('Not enough energy to shield.');
     }
 }
 
 // Switch turns
-function endTurn() {
+function switchTurn() {
     if (tempPosition) {
         undoMove(); // Automatically undo unconfirmed move
     }

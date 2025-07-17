@@ -23,7 +23,7 @@
         <div id="player2-stats" class="player-stats">
             <h2>Player 2</h2>
             <label>HP: <input type="number" id="p2-hp" min="1" value="1"></label>
-            <label>Attack Power: <input type Previewnumber" id="p2-attack" min="1" value="1"></label>
+            <label>Attack Power: <input type="number" id="p2-attack" min="1" value="1"></label>
             <label>Energy per Turn: <input type="number" id="p2-energy" min="1" value="1"></label>
             <label>Shield Strength: <input type="number" id="p2-shield" min="1" value="1"></label>
             <label>Agility: <input type="number" id="p2-agility" min="1" value="1"></label>
@@ -41,9 +41,8 @@
                 <p>Energy: <span id="current-energy"></span></p>
             </div>
             <div id="actions">
-                <button id="attack">Attack</button>
+                <button id="attack" class="hidden">Attack</button>
                 <button id="shield">Shield</button>
-                <button id="end-turn">End Turn</button>
             </div>
             <div id="move-controls" class="hidden">
                 <button id="confirm-move">Confirm Move</button>

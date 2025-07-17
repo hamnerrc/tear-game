@@ -26,31 +26,17 @@ body {
     display: inline-block;
 }
 
+#game-board {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
 #board {
-    display: grid;
-    grid-template-columns: repeat(19, 20px);
-    grid-template-rows: repeat(19, 20px);
-    gap: 1px;
     margin: 20px auto;
-    background-color: #111;
-    border: 2px solid #333;
-}
-
-.cell {
-    width: 20px;
-    height: 20px;
-    background-color: #222;
-    border: 1px solid #333;
-}
-
-.player1 {
-    background-color: #f00;
-    /* Red for Player 1 */
-}
-
-.player2 {
-    background-color: #00f;
-    /* Blue for Player 2 */
+    display: block;
+    /* Ensures SVG is treated as a block for centering */
 }
 
 #ui {
