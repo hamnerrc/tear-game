@@ -1,32 +1,72 @@
+body {
+    font-family: 'Courier New', Courier, monospace;
+    background-color: #000;
+    color: #0f0;
+    /* Retro green text */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.screen {
+    text-align: center;
+    padding: 20px;
+}
+
+.hidden {
+    display: none;
+}
+
+.player-stats {
+    margin: 20px;
+    border: 2px solid #0f0;
+    padding: 10px;
+    display: inline-block;
+}
+
 #board {
     display: grid;
-    grid-template-columns: repeat(9, 50px);
-    grid-template-rows: repeat(9, 50px);
+    grid-template-columns: repeat(19, 20px);
+    grid-template-rows: repeat(19, 20px);
+    gap: 1px;
+    margin: 20px auto;
+    background-color: #111;
+    border: 2px solid #333;
 }
 
 .cell {
-    width: 50px;
-    height: 50px;
-    border: 1px solid black;
-    position: relative;
+    width: 20px;
+    height: 20px;
+    background-color: #222;
+    border: 1px solid #333;
 }
 
-.player {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 24px;
+.player1 {
+    background-color: #f00;
+    /* Red for Player 1 */
 }
 
-#player1 {
-    color: red;
+.player2 {
+    background-color: #00f;
+    /* Blue for Player 2 */
 }
 
-#player2 {
-    color: blue;
-}
-
-#player-info {
+#ui {
     margin-top: 20px;
+}
+
+button {
+    margin: 5px;
+    padding: 10px;
+    background-color: #0f0;
+    color: #000;
+    border: 2px solid #0c0;
+    cursor: pointer;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+button:hover {
+    background-color: #0c0;
 }
