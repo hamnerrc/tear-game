@@ -23,7 +23,7 @@
         <div id="player2-stats" class="player-stats">
             <h2>Player 2</h2>
             <label>HP: <input type="number" id="p2-hp" min="1" value="1"></label>
-            <label>Attack Power: <input type="number" id="p2-attack" min="1" value="1"></label>
+            <label>Attack Power: <input type Previewnumber" id="p2-attack" min="1" value="1"></label>
             <label>Energy per Turn: <input type="number" id="p2-energy" min="1" value="1"></label>
             <label>Shield Strength: <input type="number" id="p2-shield" min="1" value="1"></label>
             <label>Agility: <input type="number" id="p2-agility" min="1" value="1"></label>
@@ -33,7 +33,7 @@
     </div>
     <div id="game-board" class="screen hidden">
         <h1>Retro Strategy Game</h1>
-        <div id="board"></div>
+        <svg id="board" width="380" height="380" viewBox="0 0 380 380"></svg>
         <div id="ui">
             <div id="player-info">
                 <h2>Current Player: <span id="current-player"></span></h2>
@@ -41,10 +41,13 @@
                 <p>Energy: <span id="current-energy"></span></p>
             </div>
             <div id="actions">
-                <button id="move">Move</button>
                 <button id="attack">Attack</button>
                 <button id="shield">Shield</button>
                 <button id="end-turn">End Turn</button>
+            </div>
+            <div id="move-controls" class="hidden">
+                <button id="confirm-move">Confirm Move</button>
+                <button id="undo-move">Undo Move</button>
             </div>
         </div>
     </div>

@@ -5,6 +5,9 @@ let players = {
     1: { position: [0, 0], hp: 0, attack: 0, energyPerTurn: 0, shieldStrength: 0, agility: 0, energy: 0, shieldActive: false },
     2: { position: [18, 18], hp: 0, attack: 0, energyPerTurn: 0, shieldStrength: 0, agility: 0, energy: 0, shieldActive: false }
 };
+let tempPosition = null;
+let draggedPiece = null;
+let dragStartX, dragStartY;
 
 // Initialize when the page loads
 document.addEventListener('DOMContentLoaded', () => {
@@ -68,18 +71,40 @@ function initializeGame() {
     setupActionButtons();
 }
 
-// Render the 19x19 board
+// Render the board with SVG
 function renderBoard() {
     const board = document.getElementById('board');
-    board.innerHTML = '';
-    for (let y = 0; y < 19; y++) {
-        for (let x = 0; x < 19; x++) {
-            const cell = document.createElement('div');
-            cell.classList.add('cell');
-            if (x === players[1].position[0] && y === players[1].position[1]) cell.classList.add('player1');
-            if (x === players[2].position[0] && y === players[2].position[1]) cell.classList.add('player2');
-            board.appendChild(cell);
-        }
+    board.innerHTML = ''; // Clear the board
+
+    // Draw grid lines
+    for (let i = 0; i <= 18; i++) {
+        const lineH = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        lineH.setAttribute('x1', 0);
+        lineH.setAttribute('y1', i * 20);
+        lineH.setAttribute('x2', 360);
+        lineH.setAttribute('y2', i * 20);
+        lineH.setAttribute('stroke', '#333');
+        board.appendChild(lineH);
+
+        const lineV = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        lineV.setAttribute('x1', i * 20);
+        lineV.setAttribute('y1', 0);
+        lineV.setAttribute('x2', i * 20);
+        lineV.setAttribute('y2', 360);
+        lineV.setAttribute('stroke', '#333');
+        board.appendChild(lineV);
+    }
+
+    // Draw players
+    for (let p = 1; p <= 2; p++) {
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', players[p].position[0] * 20);
+        circle.setAttribute('cy', players[p].position[1] * 20);
+        circle.setAttribute('r', 8);
+        circle.setAttribute('fill', p === 1 ? 'red' : 'blue');
+        circle.setAttribute('data-player', p);
+        circle.addEventListener('mousedown', startDrag);
+        board.appendChild(circle);
     }
 }
 
@@ -92,56 +117,156 @@ function updateUI() {
 
 // Set up action button listeners
 function setupActionButtons() {
-    document.getElementById('move').addEventListener('click', movePlayer);
     document.getElementById('attack').addEventListener('click', attack);
     document.getElementById('shield').addEventListener('click', shield);
     document.getElementById('end-turn').addEventListener('click', endTurn);
+    document.getElementById('confirm-move').addEventListener('click', confirmMove);
+    document.getElementById('undo-move').addEventListener('click', undoMove);
 }
 
-// Handle movement (simplified to one step at a time)
-function movePlayer() {
-    const directions = [[0, -1], [0, 1], [-1, 0], [1, 0]]; // Up, Down, Left, Right
-    const choice = prompt('Move: 0-up, 1-down, 2-left, 3-right');
-    const dir = directions[parseInt(choice)];
-    if (!dir) return;
-    const newPos = [players[currentPlayer].position[0] + dir[0], players[currentPlayer].position[1] + dir[1]];
-    if (newPos[0] < 0 || newPos[0] > 18 || newPos[1] < 0 || newPos[1] > 18) return;
-    const distance = 1; // One step
-    const energyCost = Math.ceil(distance * (10 / players[currentPlayer].agility));
-    if (players[currentPlayer].energy >= energyCost) {
-        players[currentPlayer].energy -= energyCost;
-        players[currentPlayer].position = newPos;
-        renderBoard();
-        updateUI();
+// Drag-and-drop functions
+function startDrag(event) {
+    const playerNum = parseInt(event.target.getAttribute('data-player'));
+    if (playerNum !== currentPlayer || tempPosition) return; // Only current player can drag, no dragging if previewing
+    draggedPiece = event.target;
+    dragStartX = players[currentPlayer].position[0];
+    dragStartY = players[currentPlayer].position[1];
+    showPossiblePaths();
+    document.addEventListener('mousemove', drag);
+    document.addEventListener('mouseup', stopDrag);
+}
+
+function drag(event) {
+    if (!draggedPiece) return;
+    const rect = document.getElementById('board').getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    const gridX = Math.round(x / 20);
+    const gridY = Math.round(y / 20);
+
+    // Restrict to horizontal or vertical movement from start position
+    const player = players[currentPlayer];
+    const costPerStep = Math.ceil(10 / player.agility);
+    const maxDistance = Math.floor(player.energy / costPerStep);
+
+    if (gridX === dragStartX && Math.abs(gridY - dragStartY) <= maxDistance && gridY >= 0 && gridY <= 18) {
+        draggedPiece.setAttribute('cx', dragStartX * 20);
+        draggedPiece.setAttribute('cy', gridY * 20);
+    } else if (gridY === dragStartY && Math.abs(gridX - dragStartX) <= maxDistance && gridX >= 0 && gridX <= 18) {
+        draggedPiece.setAttribute('cx', gridX * 20);
+        draggedPiece.setAttribute('cy', dragStartY * 20);
+    }
+}
+
+function stopDrag(event) {
+    if (!draggedPiece) return;
+    const gridX = Math.round(parseInt(draggedPiece.getAttribute('cx')) / 20);
+    const gridY = Math.round(parseInt(draggedPiece.getAttribute('cy')) / 20);
+    document.removeEventListener('mousemove', drag);
+    document.removeEventListener('mouseup', stopDrag);
+    document.querySelectorAll('[data-highlight]').forEach(el => el.remove());
+
+    if (gridX === dragStartX && gridY === dragStartY) {
+        renderBoard(); // Revert if dropped at start
     } else {
-        alert('Not enough energy to move.');
+        tempPosition = [dragStartX, dragStartY];
+        players[currentPlayer].position = [gridX, gridY];
+        document.getElementById('move-controls').classList.remove('hidden');
+    }
+    draggedPiece = null;
+}
+
+function showPossiblePaths() {
+    document.querySelectorAll('[data-highlight]').forEach(el => el.remove());
+    const player = players[currentPlayer];
+    const [cx, cy] = player.position;
+    const costPerStep = Math.ceil(10 / player.agility);
+    const maxDistance = Math.floor(player.energy / costPerStep);
+
+    // Highlight along the row
+    for (let x = Math.max(0, cx - maxDistance); x <= Math.min(18, cx + maxDistance); x++) {
+        if (x !== cx) {
+            addHighlight(x, cy);
+        }
+    }
+    // Highlight along the column
+    for (let y = Math.max(0, cy - maxDistance); y <= Math.min(18, cy + maxDistance); y++) {
+        if (y !== cy) {
+            addHighlight(cx, y);
+        }
     }
 }
 
-// Handle attack (Manhattan distance, simplified line-of-sight)
+function addHighlight(x, y) {
+    const highlight = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    highlight.setAttribute('cx', x * 20);
+    highlight.setAttribute('cy', y * 20);
+    highlight.setAttribute('r', 6);
+    highlight.setAttribute('fill', 'yellow');
+    highlight.setAttribute('data-highlight', `${x},${y}`);
+    document.getElementById('board').appendChild(highlight);
+}
+
+// Confirm the move
+function confirmMove() {
+    if (!tempPosition) return;
+    const [oldX, oldY] = tempPosition;
+    const [newX, newY] = players[currentPlayer].position;
+    const distance = Math.abs(newX - oldX) + Math.abs(newY - oldY);
+    const costPerStep = Math.ceil(10 / players[currentPlayer].agility);
+    const totalCost = distance * costPerStep;
+
+    players[currentPlayer].energy -= totalCost;
+    tempPosition = null;
+    document.getElementById('move-controls').classList.add('hidden');
+    renderBoard();
+    updateUI();
+}
+
+// Undo the move
+function undoMove() {
+    if (!tempPosition) return;
+    players[currentPlayer].position = tempPosition;
+    tempPosition = null;
+    document.getElementById('move-controls').classList.add('hidden');
+    renderBoard();
+}
+
+// Handle attack
 function attack() {
+    if (tempPosition) {
+        alert('Please confirm or undo your move first.');
+        return;
+    }
     const target = currentPlayer === 1 ? 2 : 1;
-    const dx = Math.abs(players[currentPlayer].position[0] - players[target].position[0]);
-    const dy = Math.abs(players[currentPlayer].position[1] - players[target].position[1]);
-    const distance = dx + dy;
-    if (distance === 0 || (dx !== 0 && dy !== 0)) return; // Must be in a straight line
-    const damage = Math.floor(players[currentPlayer].attack / (distance + 1));
-    let actualDamage = damage;
-    if (players[target].shieldActive) {
-        const reduction = Math.floor((players[target].shieldStrength * 10) / 100); // 10 energy used for shield
-        actualDamage = Math.max(0, damage - reduction);
+    const [px, py] = players[currentPlayer].position;
+    const [tx, ty] = players[target].position;
+    if (px === tx || py === ty) { // Same row or column
+        const distance = Math.abs(px - tx) + Math.abs(py - ty);
+        const damage = Math.floor(players[currentPlayer].attack / (distance + 1));
+        let actualDamage = damage;
+        if (players[target].shieldActive) {
+            const reduction = Math.floor((players[target].shieldStrength * 10) / 100);
+            actualDamage = Math.max(0, damage - reduction);
+        }
+        players[target].hp -= actualDamage;
+        if (players[target].hp <= 0) {
+            alert(`Player ${currentPlayer} wins!`);
+            location.reload();
+        }
+        endTurn();
+    } else {
+        alert('Target is not in line of sight.');
     }
-    players[target].hp -= actualDamage;
-    if (players[target].hp <= 0) {
-        alert(`Player ${currentPlayer} wins!`);
-        location.reload();
-    }
-    endTurn();
 }
 
-// Handle shield action
+// Handle shield
 function shield() {
-    const energyCost = 10; // Fixed cost for simplicity
+    if (tempPosition) {
+        alert('Please confirm or undo your move first.');
+        return;
+    }
+    const energyCost = 10;
     if (players[currentPlayer].energy >= energyCost) {
         players[currentPlayer].energy -= energyCost;
         players[currentPlayer].shieldActive = true;
@@ -153,6 +278,9 @@ function shield() {
 
 // Switch turns
 function endTurn() {
+    if (tempPosition) {
+        undoMove(); // Automatically undo unconfirmed move
+    }
     players[currentPlayer].shieldActive = false;
     currentPlayer = currentPlayer === 1 ? 2 : 1;
     players[currentPlayer].energy += 100 + players[currentPlayer].energyPerTurn;
